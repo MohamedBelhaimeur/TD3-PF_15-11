@@ -57,8 +57,8 @@ public class DAO {
     	for(Commande index:commandes){
         	for (Paire<Produit,Integer> index2:index.lignes()) {
         		 
-        			
-        	}
+        			liste_produit.add(index2.fst());
+        			}
         	
         }
       
