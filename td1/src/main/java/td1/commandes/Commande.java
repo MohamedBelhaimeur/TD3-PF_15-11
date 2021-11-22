@@ -3,15 +3,14 @@ package td1.commandes;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
-
-
+import java.util.stream.Collectors;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import td1.paires.Paire;
 
-public class Commande {
+public class Commande{
     private List<Paire<Produit, Integer>> lignes;
 
     public Commande() {
@@ -22,26 +21,42 @@ public class Commande {
         lignes.add(new Paire<>(p, q));
         return this;
     }
-    private static  final Function<Paire<Produit,Integer>,String> formatteurLigne(Paire<Produit, Integer>  ligne){
-    	return (it)->{return ligne.fst().toString()+" et "+ligne.snd().toString();};
-    		
-    		
-    	
-    }
+ 
+    private static final Function<Paire<Produit, Integer>, String> formateurLigne = k -> String.format("Commande : %s: %d", k.fst(), k.snd());
     public List<Paire<Produit, Integer>> lignes() {
         return lignes;
     }
 
     @Override
     public String toString() {
-        StringBuilder str = new StringBuilder();
-        str.append("Commande\n");
-        for (Paire<Produit, Integer> ligne : lignes) {
-            str.append(String.format("%s x%d\n", ligne.fst(), ligne.snd()));
-        }
-        return str.toString();
+       
+       return  lignes.stream()
+               .map(formateurLigne)
+               .collect(Collectors.joining("\n"));
+       
+       
     }
+    
+    public static <A,B> Map<A, List<B>> regrouper(List<Paire<A,B>> liste){
+        /*
+            Méthode générique typée <A, B>.
+            C'est une Liste et non un ensemble, donc on garde d'éventuels doublons.
+            Avec ((a1, b1), (a2, b2), (a1, b4)), par exemple, on retourne a1 -> [b1, b4].
+        */
+        Map<A, List<B>> map = new HashMap<>();
+        for (Paire<A,B> n:liste) {
+            if (!map.containsKey(n.fst())) {
+                map.put(n.fst(), new ArrayList<>());
+            }
+            map.get(n.fst()).add(n.snd());
+        }
+        return map;
 
+
+        /*return liste.stream()
+                .collect(groupingBy(Paire::fst),Collectors.mapping(Paire::snd, Collectors.toSet()));*/
+    }
+   
     /**
      * cumule les lignes en fonction des produits
      */
@@ -64,11 +79,9 @@ public class Commande {
     }
 
     public Double cout(Function<Paire<Produit, Integer>, Double> calculLigne) {
-        double rtr = 0;
-        for (Paire<Produit, Integer> l : normaliser().lignes) {
-            rtr += calculLigne.apply(l);
-        }
-        return rtr;
+    	 return lignes.stream()
+                 .map(calculLigne)
+                 .reduce(0.0, Double::sum);
     }
 
     public String affiche(Function<Paire<Produit, Integer>, Double> calculLigne) {

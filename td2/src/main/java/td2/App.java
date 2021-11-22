@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import td2.universite.Annee;
 import td2.universite.Etudiant;
@@ -21,8 +23,39 @@ public class App {
     //
     // QUESTION 1.1
     //
+		//Matiere dune annee
+	 public static final Function<Annee , Stream<Matiere>> matieresA = annee -> { return annee.ues().stream().map(UE::ects).flatMap(mat->mat.keySet().stream());};
+	 //Matiere dun etudiant
+	 public static final Function<Etudiant , Stream<Matiere>> matieresE = etudiant -> { return etudiant.annee().ues().stream().map(UE::ects).flatMap(mat->mat.keySet().stream());};
+	 // matières coefficientées d'un étudiant (version Entry)
+	  public static final Function<Etudiant, Stream<Map.Entry<Matiere, Integer>>> matieresCoefE_ = etudiant -> {return etudiant.annee().ues().stream().map(UE::ects).flatMap(x->x.entrySet().stream());};
+	 
+	// transformation d'une Entry en une Paire
+	  public static final Function<Map.Entry<Matiere, Integer>, Paire<Matiere, Integer>> entry2paire= matiereIntegerEntry -> {return new Paire<>(matiereIntegerEntry.getKey(), matiereIntegerEntry.getValue());};
+	// matières coefficientées d'un étudiant (version Paire)
+	  public static final Function<Etudiant, Stream<Paire<Matiere, Integer>>> matieresCoefE = etudiant -> {return matieresCoefE_.apply(etudiant).map(entry2paire);};
+	  
+	  // accumulateur pour calcul de la moyenne
+	    // ((asomme, acoefs), (note, coef)) -> (asomme+note*coef, acoef+coef)
+	    public static final BinaryOperator<Paire<Double, Integer>> accumulateurMoyenne =(x,y)-> {return new Paire<Double, Integer>(x.fst+ y.fst * y.snd,x.snd + y.snd);};
+	 // zero (valeur initiale pour l'accumulateur)
+	    public static final Paire<Double, Integer> zero(){
+	           return new Paire<>(0.0, 0);
+	         
+	        }
+	    // obtention de la liste de (note, coef) pour les matières d'un étudiant
+        // 1. obtenir les (matière, coef)s
+        // 2. mapper pour obtenir les (note, coef)s, null pour la note si l'étudiant est DEF dan
+        public static final Function<Etudiant, List<Paire<Double, Integer>>> notesPonderees =etudiant ->
+        {
+                List<Paire<Double, Integer>> list = new ArrayList<>();
+                list.add(new Paire<Double, Integer>(etudiant.notes().values().iterator().next(),matieresCoefE.apply(etudiant).iterator().next().snd));
+                return list;
+        };
 
-    public static void question1_1() {
+	    
+	    
+	    public static void question1_1() {
         Somme<Integer> sommeInteger = (x, y) -> x + y;
         Somme<Double> sommeDouble = (x, y) -> x + y;
         Somme<Long> sommeLong = (x, y) -> x + y;
